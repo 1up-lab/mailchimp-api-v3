@@ -114,12 +114,14 @@ class MailChimp
     public function validateApiKey()
     {
         $response = $this->get();
+
         return $response && 200 == $response->getStatusCode() ? true : false;
     }
 
     public function getAccountDetails()
     {
         $response = $this->get('');
+
         return $response ? json_decode($response->getBody()) : null;
     }
 
