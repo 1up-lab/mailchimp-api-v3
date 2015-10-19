@@ -11,7 +11,7 @@ This is a basic PHP wrapper for the MailChimp API V3 for subscribe/unsubscribe t
 **Subscribe**
 
 ````php
-$mc = new MailChimp('thisShouldBeYourApiKeyFromMailChimp-us1');
+$mc = new \Oneup\MailChimp\Client('thisShouldBeYourApiKeyFromMailChimp-us1');
 $response = $mc->subscribeToList(
     'ea06b81001',           // List ID
     'foo@bar.baz',          // E-Mail address 
@@ -26,6 +26,6 @@ $response = $mc->subscribeToList(
 **Unsubscribe**
 
 ````php
-$mc = new MailChimp('thisShouldBeYourApiKeyFromMailChimp-us1');
+$mc = new \Oneup\MailChimp\Client('thisShouldBeYourApiKeyFromMailChimp-us1');
 $response = $mc->unsubscribeFromList('yourListId', 'foo@bar.baz');
 ````

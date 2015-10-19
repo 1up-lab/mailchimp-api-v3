@@ -2,10 +2,10 @@
 
 namespace Oneup\MailChimp;
 
-use GuzzleHttp\Client;
+use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Exception\RequestException;
 
-class MailChimp
+class Client
 {
     /** @var Client $client */
     protected $client;
@@ -27,7 +27,7 @@ class MailChimp
             'User-Agent' => '1up/mailchimp-api-v3 (https://github.com/1up-lab/mailchimp-api-v3)',
         ];
 
-        $this->client = new Client([
+        $this->client = new GuzzleClient([
             'base_url' => $this->apiEndpoint,
         ]);
     }
