@@ -145,12 +145,17 @@ class Client
         $endpoint = sprintf('lists/%s/members', $listId);
 
         if (!$this->isSubscribed($listId, $email)) {
-            $response = $this->post($endpoint, [
+            $requestData = [
                 'id' => $listId,
                 'email_address' => $email,
-                'merge_fields' => $mergeVars,
                 'status' => $doubleOptin ? 'pending' : 'subscribed',
-            ]);
+            ];
+
+            if (count($mergeVars) > 0) {
+                $requestData['merge_fields'] = $mergeVars;
+            }
+
+            $response = $this->post($endpoint, $requestData);
 
             return $response && 200 == $response->getStatusCode() ? true : false;
         }
