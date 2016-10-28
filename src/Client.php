@@ -28,59 +28,60 @@ class Client
         ];
 
         $this->client = new GuzzleClient([
-            'base_url' => $this->apiEndpoint,
+            'base_uri' => $this->apiEndpoint,
         ]);
     }
 
     public function call($type = 'get', $uri = '', $args = [], $timeout = 10)
     {
         $args['apikey'] = $this->apiKey;
-        $request = null;
+        $response = null;
 
-        switch ($type) {
-            case 'post':
-                $request = $this->client->createRequest('POST', $uri, [
-                    'json' => $args,
-                    'timeout' => $timeout,
-                    'headers' => $this->headers,
-                ]);
-                break;
-
-            case 'patch':
-                $request = $this->client->createRequest('PATCH', $uri, [
-                    'body' => json_encode($args),
-                    'timeout' => $timeout,
-                    'headers' => $this->headers,
-                ]);
-                break;
-
-            case 'put':
-                $request = $this->client->createRequest('PUT', $uri, [
-                    'query' => $args,
-                    'timeout' => $timeout,
-                    'headers' => $this->headers,
-                ]);
-                break;
-
-            case 'delete':
-                $request = $this->client->createRequest('DELETE', $uri, [
-                    'query' => $args,
-                    'timeout' => $timeout,
-                    'headers' => $this->headers,
-                ]);
-                break;
-
-            case 'get':
-            default:
-                $request = $this->client->createRequest('GET', $uri, [
-                    'query' => $args,
-                    'timeout' => $timeout,
-                    'headers' => $this->headers,
-                ]);
-                break;
-        }
         try {
-            return $this->client->send($request);
+            switch ($type) {
+                case 'post':
+                    $response = $this->client->request('POST', $uri, [
+                        'json' => $args,
+                        'timeout' => $timeout,
+                        'headers' => $this->headers,
+                    ]);
+                    break;
+
+                case 'patch':
+                    $response = $this->client->request('PATCH', $uri, [
+                        'body' => json_encode($args),
+                        'timeout' => $timeout,
+                        'headers' => $this->headers,
+                    ]);
+                    break;
+
+                case 'put':
+                    $response = $this->client->request('PUT', $uri, [
+                        'query' => $args,
+                        'timeout' => $timeout,
+                        'headers' => $this->headers,
+                    ]);
+                    break;
+
+                case 'delete':
+                    $response = $this->client->request('DELETE', $uri, [
+                        'query' => $args,
+                        'timeout' => $timeout,
+                        'headers' => $this->headers,
+                    ]);
+                    break;
+
+                case 'get':
+                default:
+                $response = $this->client->request('GET', $uri, [
+                        'query' => $args,
+                        'timeout' => $timeout,
+                        'headers' => $this->headers,
+                    ]);
+                    break;
+            }
+
+            return $response;
         } catch (RequestException $e) {
             return $e->getResponse();
         }
@@ -133,7 +134,9 @@ class Client
 
         $response = $this->get($endpoint);
 
-        if (200 === $response->getStatusCode()) {
+        $body = json_decode($response->getBody());
+
+        if ('subscribed' === $body->status) {
             return true;
         }
 
@@ -151,6 +154,13 @@ class Client
                 'merge_fields' => $mergeVars,
                 'status' => $doubleOptin ? 'pending' : 'subscribed',
             ]);
+
+            $body = json_decode($response->getBody());
+
+            // This is quite hacky due to fucked up mailchimp API
+            if (400 === $response->getStatusCode() && 'Member Exists' === $body->title) {
+                return true;
+            }
 
             return $response && 200 == $response->getStatusCode() ? true : false;
         }
