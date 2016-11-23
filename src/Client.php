@@ -4,6 +4,7 @@ namespace Oneup\MailChimp;
 
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Exception\RequestException;
+use Oneup\MailChimp\Exception\ApiException;
 
 class Client
 {
@@ -203,5 +204,18 @@ class Client
         }
 
         return false;
+    }
+
+    public function getListFields($listId)
+    {
+        $endpoint = sprintf('lists/%s/merge-fields', $listId);
+
+        $response = $this->get($endpoint);
+
+        if (200 !== $response->getStatusCode()) {
+            throw new ApiException('Could not fetch merge-fields from api.');
+        }
+
+        return json_decode($response->getBody());
     }
 }
