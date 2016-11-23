@@ -2,4 +2,6 @@
 
 namespace Oneup\MailChimp\Exception;
 
-class ApiException extends \Exception {}
+class ApiException extends \Exception
+{
+}
