@@ -212,8 +212,12 @@ class Client
 
         $response = $this->get($endpoint);
 
+        if (null === $response) {
+            throw new ApiException('Could not connect to API. Check your credentials.');
+        }
+
         if (200 !== $response->getStatusCode()) {
-            throw new ApiException('Could not fetch merge-fields from api.');
+            throw new ApiException('Could not fetch merge-fields from API.');
         }
 
         return json_decode($response->getBody());
