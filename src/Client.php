@@ -58,7 +58,7 @@ class Client
 
                 case 'put':
                     $response = $this->client->request('PUT', $uri, [
-                        'query' => $args,
+                        'body' => json_encode($args),
                         'timeout' => $timeout,
                         'headers' => $this->headers,
                     ]);
