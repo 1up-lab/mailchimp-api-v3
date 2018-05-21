@@ -144,7 +144,7 @@ class Client
         return false;
     }
 
-    public function subscribeToList($listId, $email, $mergeVars = [], $doubleOptin = true)
+    public function subscribeToList($listId, $email, $mergeVars = [], $doubleOptin = true, $interests = [])
     {
         $endpoint = sprintf('lists/%s/members', $listId);
 
@@ -157,6 +157,10 @@ class Client
 
             if (count($mergeVars) > 0) {
                 $requestData['merge_fields'] = $mergeVars;
+            }
+
+            if (count($interests) > 0) {
+                $requestData['interests'] = $interests;
             }
 
             $response = $this->post($endpoint, $requestData);
@@ -218,6 +222,40 @@ class Client
 
         if (200 !== $response->getStatusCode()) {
             throw new ApiException('Could not fetch merge-fields from API.');
+        }
+
+        return json_decode($response->getBody());
+    }
+
+    public function getListGroupCategories($listId)
+    {
+        $endpoint = sprintf('lists/%s/interest-categories', $listId);
+
+        $response = $this->get($endpoint);
+
+        if (null === $response) {
+            throw new ApiException('Could not connect to API. Check your credentials.');
+        }
+
+        if (200 !== $response->getStatusCode()) {
+            throw new ApiException('Could not fetch interest-categories from API.');
+        }
+
+        return json_decode($response->getBody());
+    }
+
+    public function getListGroup($listId, $groupId)
+    {
+        $endpoint = sprintf('lists/%s/interest-categories/%s/interests', $listId, $groupId);
+
+        $response = $this->get($endpoint);
+
+        if (null === $response) {
+            throw new ApiException('Could not connect to API. Check your credentials.');
+        }
+
+        if (200 !== $response->getStatusCode()) {
+            throw new ApiException('Could not fetch interest group from API.');
         }
 
         return json_decode($response->getBody());
