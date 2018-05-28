@@ -129,26 +129,26 @@ class Client
 
     public function isSubscribed($listId, $email)
     {
-        $email = strtolower($email);
-        $hash = md5($email);
-        $endpoint = sprintf('lists/%s/members/%s', $listId, $hash);
+        return 'subscribed' === $this->getSubscriberStatus($listId, $email);
+    }
+
+    public function getSubscriberStatus($listId, $email)
+    {
+        $endpoint = sprintf('lists/%s/members/%s', $listId, $this->subscriberHash($email));
 
         $response = $this->get($endpoint);
 
         $body = json_decode($response->getBody());
 
-        if ('subscribed' === $body->status) {
-            return true;
-        }
-
-        return false;
+        return $body->status;
     }
 
     public function subscribeToList($listId, $email, $mergeVars = [], $doubleOptin = true, $interests = [])
     {
+        $status = $this->getSubscriberStatus($listId, $email);
         $endpoint = sprintf('lists/%s/members', $listId);
 
-        if (!$this->isSubscribed($listId, $email)) {
+        if ('subscribed' !== $status) {
             $requestData = [
                 'id' => $listId,
                 'email_address' => $email,
@@ -163,7 +163,11 @@ class Client
                 $requestData['interests'] = $interests;
             }
 
-            $response = $this->post($endpoint, $requestData);
+            if (404 !== $status) {
+                $response = $this->patch($endpoint . '/' . $this->subscriberHash($email), $requestData);
+            } else {
+                $response = $this->post($endpoint, $requestData);
+            }
 
             $body = json_decode($response->getBody());
 
@@ -180,9 +184,7 @@ class Client
 
     public function unsubscribeFromList($listId, $email)
     {
-        $email = strtolower($email);
-        $hash = md5($email);
-        $endpoint = sprintf('lists/%s/members/%s', $listId, $hash);
+        $endpoint = sprintf('lists/%s/members/%s', $listId, $this->subscriberHash($email));
 
         $response = $this->patch($endpoint, [
             'status' => 'unsubscribed'
@@ -197,9 +199,7 @@ class Client
 
     public function removeFromList($listId, $email)
     {
-        $email = strtolower($email);
-        $hash = md5($email);
-        $endpoint = sprintf('lists/%s/members/%s', $listId, $hash);
+        $endpoint = sprintf('lists/%s/members/%s', $listId, $this->subscriberHash($email));
 
         $response = $this->delete($endpoint);
 
@@ -259,5 +259,10 @@ class Client
         }
 
         return json_decode($response->getBody());
+    }
+
+    public function subscriberHash($email)
+    {
+        return md5(strtolower($email));
     }
 }
