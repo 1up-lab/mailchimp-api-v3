@@ -210,11 +210,11 @@ class Client
         return false;
     }
 
-    public function getListFields($listId)
+    public function getListFields($listId, $offset = 0, $limit = 10)
     {
         $endpoint = sprintf('lists/%s/merge-fields', $listId);
 
-        $response = $this->get($endpoint);
+        $response = $this->get($endpoint, ['offset' => $offset, 'limit' => $limit]);
 
         if (null === $response) {
             throw new ApiException('Could not connect to API. Check your credentials.');
@@ -227,11 +227,11 @@ class Client
         return json_decode($response->getBody());
     }
 
-    public function getListGroupCategories($listId)
+    public function getListGroupCategories($listId, $offset = 0, $limit = 10)
     {
         $endpoint = sprintf('lists/%s/interest-categories', $listId);
 
-        $response = $this->get($endpoint);
+        $response = $this->get($endpoint, ['offset' => $offset, 'limit' => $limit]);
 
         if (null === $response) {
             throw new ApiException('Could not connect to API. Check your credentials.');
@@ -244,11 +244,11 @@ class Client
         return json_decode($response->getBody());
     }
 
-    public function getListGroup($listId, $groupId)
+    public function getListGroup($listId, $groupId, $offset = 0, $limit = 10)
     {
         $endpoint = sprintf('lists/%s/interest-categories/%s/interests', $listId, $groupId);
 
-        $response = $this->get($endpoint);
+        $response = $this->get($endpoint, ['offset' => $offset, 'limit' => $limit]);
 
         if (null === $response) {
             throw new ApiException('Could not connect to API. Check your credentials.');
