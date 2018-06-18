@@ -141,6 +141,10 @@ class Client
 
         $response = $this->get($endpoint);
 
+        if (null === $response) {
+            throw new ApiException('Could not connect to API. Check your credentials.');
+        }
+
         $body = json_decode($response->getBody());
 
         return $body->status;
@@ -167,6 +171,10 @@ class Client
             }
 
             $response = $this->put($endpoint . '/' . $this->getSubscriberHash($email), $requestData);
+
+            if (null === $response) {
+                throw new ApiException('Could not connect to API. Check your credentials.');
+            }
 
             $body = json_decode($response->getBody());
 
