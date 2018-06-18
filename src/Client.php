@@ -8,6 +8,9 @@ use Oneup\MailChimp\Exception\ApiException;
 
 class Client
 {
+    protected const STATUS_SUBSCRIBED = 'subscribed';
+    protected const STATUS_PENDING    = 'pending';
+
     /** @var Client $client */
     protected $client;
     protected $apiKey;
@@ -129,30 +132,34 @@ class Client
 
     public function isSubscribed($listId, $email)
     {
-        $email = strtolower($email);
-        $hash = md5($email);
-        $endpoint = sprintf('lists/%s/members/%s', $listId, $hash);
+        return self::STATUS_SUBSCRIBED === $this->getSubscriberStatus($listId, $email);
+    }
+
+    public function getSubscriberStatus($listId, $email)
+    {
+        $endpoint = sprintf('lists/%s/members/%s', $listId, $this->getSubscriberHash($email));
 
         $response = $this->get($endpoint);
 
-        $body = json_decode($response->getBody());
-
-        if ('subscribed' === $body->status) {
-            return true;
+        if (null === $response) {
+            throw new ApiException('Could not connect to API. Check your credentials.');
         }
 
-        return false;
+        $body = json_decode($response->getBody());
+
+        return $body->status;
     }
 
     public function subscribeToList($listId, $email, $mergeVars = [], $doubleOptin = true, $interests = [])
     {
+        $status = $this->getSubscriberStatus($listId, $email);
         $endpoint = sprintf('lists/%s/members', $listId);
 
-        if (!$this->isSubscribed($listId, $email)) {
+        if (self::STATUS_SUBSCRIBED !== $status) {
             $requestData = [
                 'id' => $listId,
                 'email_address' => $email,
-                'status' => $doubleOptin ? 'pending' : 'subscribed',
+                'status' => $doubleOptin ? self::STATUS_PENDING : self::STATUS_SUBSCRIBED,
             ];
 
             if (count($mergeVars) > 0) {
@@ -163,7 +170,11 @@ class Client
                 $requestData['interests'] = $interests;
             }
 
-            $response = $this->post($endpoint, $requestData);
+            $response = $this->put($endpoint . '/' . $this->getSubscriberHash($email), $requestData);
+
+            if (null === $response) {
+                throw new ApiException('Could not connect to API. Check your credentials.');
+            }
 
             $body = json_decode($response->getBody());
 
@@ -180,9 +191,7 @@ class Client
 
     public function unsubscribeFromList($listId, $email)
     {
-        $email = strtolower($email);
-        $hash = md5($email);
-        $endpoint = sprintf('lists/%s/members/%s', $listId, $hash);
+        $endpoint = sprintf('lists/%s/members/%s', $listId, $this->getSubscriberHash($email));
 
         $response = $this->patch($endpoint, [
             'status' => 'unsubscribed'
@@ -197,9 +206,7 @@ class Client
 
     public function removeFromList($listId, $email)
     {
-        $email = strtolower($email);
-        $hash = md5($email);
-        $endpoint = sprintf('lists/%s/members/%s', $listId, $hash);
+        $endpoint = sprintf('lists/%s/members/%s', $listId, $this->getSubscriberHash($email));
 
         $response = $this->delete($endpoint);
 
@@ -259,5 +266,10 @@ class Client
         }
 
         return json_decode($response->getBody());
+    }
+
+    public function getSubscriberHash($email)
+    {
+        return md5(strtolower($email));
     }
 }
