@@ -1,43 +1,46 @@
 {
-  "name":"oneup/mailchimp-api-v3",
-  "description":"Simple PHP library for MailChimp API V3",
-  "keywords":["mailchimp", "api", "v3", "email", "marketing", "services"],
-  "type":"library",
-  "homepage":"http://1up.io",
-  "license":"MIT",
-  "authors":[
-    {
-      "name":"David Greminger",
-      "email":"dg@1up.io",
-      "homepage":"http://1up.io",
-      "role":"Developer"
+    "name": "oneup/mailchimp-api-v3",
+    "type": "library",
+    "description": "Simple PHP library for MailChimp API V3",
+    "keywords": [
+        "mailchimp",
+        "api",
+        "v3",
+        "email",
+        "marketing",
+        "services"
+    ],
+    "homepage": "http://1up.io",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "David Greminger",
+            "email": "dg@1up.io",
+            "homepage": "http://1up.io",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": ">=5.4",
+        "guzzlehttp/guzzle": "~6.0"
+    },
+    "require-dev": {
+        "leofeyer/optimize-native-functions-fixer": "^1.0",
+        "phpunit/phpunit": "~5.7"
+    },
+    "autoload": {
+        "psr-4": {
+            "Oneup\\MailChimp\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Oneup\\MailChimp\\Tests\\": "tests"
+        }
+    },
+    "support": {
+        "email": "hello@1up.io",
+        "issues": "https://github.com/1up-lab/mailchimp-api-v3/issues",
+        "source": "https://github.com/1up-lab/mailchimp-api-v3"
     }
-  ],
-  "support":{
-    "email":"hello@1up.io",
-    "issues":"https://github.com/1up-lab/mailchimp-api-v3/issues",
-    "source":"https://github.com/1up-lab/mailchimp-api-v3"
-  },
-  "require":{
-    "php":">=5.4",
-    "guzzlehttp/guzzle": "~6.0"
-  },
-  "require-dev": {
-    "phpunit/phpunit": "~5.7"
-  },
-  "autoload": {
-    "psr-4": {
-      "Oneup\\MailChimp\\": "src"
-    }
-  },
-  "autoload-dev": {
-    "psr-4": {
-      "Oneup\\MailChimp\\Tests\\": "tests"
-    }
-  },
-  "extra": {
-    "branch-alias": {
-      "dev-master": "2.1.x-dev"
-    }
-  }
 }
