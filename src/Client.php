@@ -8,6 +8,9 @@ use Oneup\MailChimp\Exception\ApiException;
 
 class Client
 {
+    protected const STATUS_SUBSCRIBED = 'subscribed';
+    protected const STATUS_PENDING    = 'pending';
+
     /** @var Client $client */
     protected $client;
     protected $apiKey;
@@ -129,12 +132,12 @@ class Client
 
     public function isSubscribed($listId, $email)
     {
-        return 'subscribed' === $this->getSubscriberStatus($listId, $email);
+        return self::STATUS_SUBSCRIBED === $this->getSubscriberStatus($listId, $email);
     }
 
     public function getSubscriberStatus($listId, $email)
     {
-        $endpoint = sprintf('lists/%s/members/%s', $listId, $this->subscriberHash($email));
+        $endpoint = sprintf('lists/%s/members/%s', $listId, $this->getSubscriberHash($email));
 
         $response = $this->get($endpoint);
 
@@ -148,11 +151,11 @@ class Client
         $status = $this->getSubscriberStatus($listId, $email);
         $endpoint = sprintf('lists/%s/members', $listId);
 
-        if ('subscribed' !== $status) {
+        if (self::STATUS_SUBSCRIBED !== $status) {
             $requestData = [
                 'id' => $listId,
                 'email_address' => $email,
-                'status' => $doubleOptin ? 'pending' : 'subscribed',
+                'status' => $doubleOptin ? self::STATUS_PENDING : self::STATUS_SUBSCRIBED,
             ];
 
             if (count($mergeVars) > 0) {
@@ -163,11 +166,7 @@ class Client
                 $requestData['interests'] = $interests;
             }
 
-            if (404 !== $status) {
-                $response = $this->patch($endpoint . '/' . $this->subscriberHash($email), $requestData);
-            } else {
-                $response = $this->post($endpoint, $requestData);
-            }
+            $response = $this->put($endpoint . '/' . $this->getSubscriberHash($email), $requestData);
 
             $body = json_decode($response->getBody());
 
@@ -184,7 +183,7 @@ class Client
 
     public function unsubscribeFromList($listId, $email)
     {
-        $endpoint = sprintf('lists/%s/members/%s', $listId, $this->subscriberHash($email));
+        $endpoint = sprintf('lists/%s/members/%s', $listId, $this->getSubscriberHash($email));
 
         $response = $this->patch($endpoint, [
             'status' => 'unsubscribed'
@@ -199,7 +198,7 @@ class Client
 
     public function removeFromList($listId, $email)
     {
-        $endpoint = sprintf('lists/%s/members/%s', $listId, $this->subscriberHash($email));
+        $endpoint = sprintf('lists/%s/members/%s', $listId, $this->getSubscriberHash($email));
 
         $response = $this->delete($endpoint);
 
@@ -261,7 +260,7 @@ class Client
         return json_decode($response->getBody());
     }
 
-    public function subscriberHash($email)
+    public function getSubscriberHash($email)
     {
         return md5(strtolower($email));
     }
