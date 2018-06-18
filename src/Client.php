@@ -8,8 +8,8 @@ use Oneup\MailChimp\Exception\ApiException;
 
 class Client
 {
-    protected const STATUS_SUBSCRIBED = 'subscribed';
-    protected const STATUS_PENDING    = 'pending';
+    const STATUS_SUBSCRIBED = 'subscribed';
+    const STATUS_PENDING = 'pending';
 
     /** @var Client $client */
     protected $client;
@@ -120,7 +120,7 @@ class Client
     {
         $response = $this->get();
 
-        return $response && 200 == $response->getStatusCode() ? true : false;
+        return $response && 200 === $response->getStatusCode() ? true : false;
     }
 
     public function getAccountDetails()
@@ -162,15 +162,15 @@ class Client
                 'status' => $doubleOptin ? self::STATUS_PENDING : self::STATUS_SUBSCRIBED,
             ];
 
-            if (count($mergeVars) > 0) {
+            if (\count($mergeVars) > 0) {
                 $requestData['merge_fields'] = $mergeVars;
             }
 
-            if (count($interests) > 0) {
+            if (\count($interests) > 0) {
                 $requestData['interests'] = $interests;
             }
 
-            $response = $this->put($endpoint . '/' . $this->getSubscriberHash($email), $requestData);
+            $response = $this->put($endpoint.'/'.$this->getSubscriberHash($email), $requestData);
 
             if (null === $response) {
                 throw new ApiException('Could not connect to API. Check your credentials.');
@@ -183,7 +183,7 @@ class Client
                 return true;
             }
 
-            return $response && 200 == $response->getStatusCode() ? true : false;
+            return $response && 200 === $response->getStatusCode() ? true : false;
         }
 
         return false;
@@ -194,10 +194,10 @@ class Client
         $endpoint = sprintf('lists/%s/members/%s', $listId, $this->getSubscriberHash($email));
 
         $response = $this->patch($endpoint, [
-            'status' => 'unsubscribed'
+            'status' => 'unsubscribed',
         ]);
 
-        if (200 == $response->getStatusCode()) {
+        if (200 === $response->getStatusCode()) {
             return true;
         }
 
