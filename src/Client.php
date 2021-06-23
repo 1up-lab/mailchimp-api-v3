@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Oneup\MailChimp;
 
 use GuzzleHttp\Client as GuzzleClient;
@@ -8,10 +10,10 @@ use Oneup\MailChimp\Exception\ApiException;
 
 class Client
 {
-    const STATUS_SUBSCRIBED = 'subscribed';
-    const STATUS_PENDING = 'pending';
+    public const STATUS_SUBSCRIBED = 'subscribed';
+    public const STATUS_PENDING = 'pending';
 
-    /** @var Client $client */
+    /** @var Client */
     protected $client;
     protected $apiKey;
     protected $apiEndpoint = 'https://%dc%.api.mailchimp.com/3.0/';
@@ -21,13 +23,13 @@ class Client
     {
         $this->apiKey = $apiKey;
 
-        list(, $dc) = explode('-', $this->apiKey);
+        [, $dc] = explode('-', $this->apiKey);
         $this->apiEndpoint = preg_replace('/%dc%/', $dc, $this->apiEndpoint);
 
         $this->headers = [
             'Accept' => 'application/vnd.api+json',
             'Content-Type' => 'application/vnd.api+json',
-            'Authorization' => 'apikey '.$this->apiKey,
+            'Authorization' => 'apikey ' . $this->apiKey,
             'User-Agent' => '1up/mailchimp-api-v3 (https://github.com/1up-lab/mailchimp-api-v3)',
         ];
 
@@ -39,7 +41,6 @@ class Client
     public function call($type = 'get', $uri = '', $args = [], $timeout = 10)
     {
         $args['apikey'] = $this->apiKey;
-        $response = null;
 
         try {
             switch ($type) {
@@ -77,7 +78,7 @@ class Client
 
                 case 'get':
                 default:
-                $response = $this->client->request('GET', $uri, [
+                    $response = $this->client->request('GET', $uri, [
                         'query' => $args,
                         'timeout' => $timeout,
                         'headers' => $this->headers,
@@ -116,21 +117,21 @@ class Client
         return $this->call('delete', $uri, $args, $timeout);
     }
 
-    public function validateApiKey()
+    public function validateApiKey(): bool
     {
         $response = $this->get();
 
-        return $response && 200 === $response->getStatusCode() ? true : false;
+        return $response && 200 === $response->getStatusCode();
     }
 
     public function getAccountDetails()
     {
         $response = $this->get('');
 
-        return $response ? json_decode($response->getBody()) : null;
+        return $response ? json_decode((string) $response->getBody(), false) : null;
     }
 
-    public function isSubscribed($listId, $email)
+    public function isSubscribed($listId, $email): bool
     {
         return self::STATUS_SUBSCRIBED === $this->getSubscriberStatus($listId, $email);
     }
@@ -145,12 +146,10 @@ class Client
             throw new ApiException('Could not connect to API. Check your credentials.');
         }
 
-        $body = json_decode($response->getBody());
-
-        return $body->status;
+        return json_decode((string) $response->getBody(), false)->status;
     }
 
-    public function subscribeToList($listId, $email, $mergeVars = [], $doubleOptin = true, $interests = [])
+    public function subscribeToList($listId, $email, $mergeVars = [], $doubleOptin = true, $interests = []): bool
     {
         $status = $this->getSubscriberStatus($listId, $email);
         $endpoint = sprintf('lists/%s/members', $listId);
@@ -170,26 +169,26 @@ class Client
                 $requestData['interests'] = $interests;
             }
 
-            $response = $this->put($endpoint.'/'.$this->getSubscriberHash($email), $requestData);
+            $response = $this->put($endpoint . '/' . $this->getSubscriberHash($email), $requestData);
 
             if (null === $response) {
                 throw new ApiException('Could not connect to API. Check your credentials.');
             }
 
-            $body = json_decode($response->getBody());
+            $body = json_decode((string) $response->getBody(), false);
 
             // This is quite hacky due to fucked up mailchimp API
-            if (400 === $response->getStatusCode() && 'Member Exists' === $body->title) {
+            if ('Member Exists' === $body->title && 400 === $response->getStatusCode()) {
                 return true;
             }
 
-            return $response && 200 === $response->getStatusCode() ? true : false;
+            return 200 === $response->getStatusCode();
         }
 
         return false;
     }
 
-    public function unsubscribeFromList($listId, $email)
+    public function unsubscribeFromList($listId, $email): bool
     {
         $endpoint = sprintf('lists/%s/members/%s', $listId, $this->getSubscriberHash($email));
 
@@ -197,24 +196,16 @@ class Client
             'status' => 'unsubscribed',
         ]);
 
-        if (200 === $response->getStatusCode()) {
-            return true;
-        }
-
-        return false;
+        return $response && 200 === $response->getStatusCode();
     }
 
-    public function removeFromList($listId, $email)
+    public function removeFromList($listId, $email): bool
     {
         $endpoint = sprintf('lists/%s/members/%s', $listId, $this->getSubscriberHash($email));
 
         $response = $this->delete($endpoint);
 
-        if (204 === $response->getStatusCode()) {
-            return true;
-        }
-
-        return false;
+        return $response && 204 === $response->getStatusCode();
     }
 
     public function getListFields($listId, $offset = 0, $limit = 10)
@@ -231,7 +222,7 @@ class Client
             throw new ApiException('Could not fetch merge-fields from API.');
         }
 
-        return json_decode($response->getBody());
+        return json_decode((string) $response->getBody(), false);
     }
 
     public function getListGroupCategories($listId, $offset = 0, $limit = 10)
@@ -248,7 +239,7 @@ class Client
             throw new ApiException('Could not fetch interest-categories from API.');
         }
 
-        return json_decode($response->getBody());
+        return json_decode((string) $response->getBody(), false);
     }
 
     public function getListGroup($listId, $groupId, $offset = 0, $limit = 10)
@@ -265,10 +256,10 @@ class Client
             throw new ApiException('Could not fetch interest group from API.');
         }
 
-        return json_decode($response->getBody());
+        return json_decode((string) $response->getBody(), false);
     }
 
-    public function getSubscriberHash($email)
+    public function getSubscriberHash($email): string
     {
         return md5(strtolower($email));
     }
