@@ -16,6 +16,7 @@ class Client
     protected $apiKey;
     protected $apiEndpoint = 'https://%dc%.api.mailchimp.com/3.0/';
     protected $headers = [];
+    protected $lastError;
 
     public function __construct($apiKey)
     {
@@ -85,8 +86,12 @@ class Client
                     break;
             }
 
+            $this->lastError = null;
+
             return $response;
         } catch (RequestException $e) {
+            $this->lastError = json_decode($e->getResponse()->getBody());
+
             return $e->getResponse();
         }
     }
@@ -271,5 +276,13 @@ class Client
     public function getSubscriberHash($email)
     {
         return md5(strtolower($email));
+    }
+
+    /**
+     * @return object|null
+     */
+    public function getLastError()
+    {
+        return $this->lastError;
     }
 }
