@@ -90,6 +90,12 @@ class Client
 
             return $response;
         } catch (RequestException $e) {
+            $response = $e->getResponse();
+
+            if (null === $response) {
+                throw $e;
+            }
+
             $this->lastError = json_decode($e->getResponse()->getBody());
 
             return $e->getResponse();
