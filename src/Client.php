@@ -96,9 +96,9 @@ class Client
                 throw $e;
             }
 
-            $this->lastError = json_decode($e->getResponse()->getBody());
+            $this->lastError = json_decode($response->getBody());
 
-            return $e->getResponse();
+            return $response;
         }
     }
 
