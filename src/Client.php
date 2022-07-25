@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Oneup\MailChimp;
 
 use GuzzleHttp\Client as GuzzleClient;
@@ -8,10 +10,10 @@ use Oneup\MailChimp\Exception\ApiException;
 
 class Client
 {
-    const STATUS_SUBSCRIBED = 'subscribed';
-    const STATUS_PENDING = 'pending';
+    public const STATUS_SUBSCRIBED = 'subscribed';
+    public const STATUS_PENDING = 'pending';
 
-    /** @var Client $client */
+    /** @var Client */
     protected $client;
     protected $apiKey;
     protected $apiEndpoint = 'https://%dc%.api.mailchimp.com/3.0/';
@@ -22,13 +24,13 @@ class Client
     {
         $this->apiKey = $apiKey;
 
-        list(, $dc) = explode('-', $this->apiKey);
+        [, $dc] = explode('-', $this->apiKey);
         $this->apiEndpoint = preg_replace('/%dc%/', $dc, $this->apiEndpoint);
 
         $this->headers = [
             'Accept' => 'application/vnd.api+json',
             'Content-Type' => 'application/vnd.api+json',
-            'Authorization' => 'apikey '.$this->apiKey,
+            'Authorization' => 'apikey ' . $this->apiKey,
             'User-Agent' => '1up/mailchimp-api-v3 (https://github.com/1up-lab/mailchimp-api-v3)',
         ];
 
@@ -78,11 +80,11 @@ class Client
 
                 case 'get':
                 default:
-                $response = $this->client->request('GET', $uri, [
-                        'query' => $args,
-                        'timeout' => $timeout,
-                        'headers' => $this->headers,
-                    ]);
+                    $response = $this->client->request('GET', $uri, [
+                            'query' => $args,
+                            'timeout' => $timeout,
+                            'headers' => $this->headers,
+                        ]);
                     break;
             }
 
@@ -181,7 +183,7 @@ class Client
                 $requestData['interests'] = $interests;
             }
 
-            $response = $this->put($endpoint.'/'.$this->getSubscriberHash($email), $requestData);
+            $response = $this->put($endpoint . '/' . $this->getSubscriberHash($email), $requestData);
 
             if (null === $response) {
                 throw new ApiException('Could not connect to API. Check your credentials.');
