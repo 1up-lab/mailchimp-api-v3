@@ -98,7 +98,7 @@ class Client
                 throw $e;
             }
 
-            $this->lastError = json_decode($response->getBody());
+            $this->lastError = json_decode($response->getBody()->getContents());
 
             return $response;
         }
@@ -140,7 +140,7 @@ class Client
     {
         $response = $this->get('');
 
-        return $response ? json_decode($response->getBody()) : null;
+        return $response ? json_decode($response->getBody()->getContents()) : null;
     }
 
     public function isSubscribed($listId, $email)
@@ -158,7 +158,7 @@ class Client
             throw new ApiException('Could not connect to API. Check your credentials.');
         }
 
-        $body = json_decode($response->getBody());
+        $body = json_decode($response->getBody()->getContents());
 
         return $body->status;
     }
@@ -189,7 +189,7 @@ class Client
                 throw new ApiException('Could not connect to API. Check your credentials.');
             }
 
-            $body = json_decode($response->getBody());
+            $body = json_decode($response->getBody()->getContents());
 
             // This is quite hacky due to fucked up mailchimp API
             if (400 === $response->getStatusCode() && 'Member Exists' === $body->title) {
@@ -244,7 +244,7 @@ class Client
             throw new ApiException('Could not fetch merge-fields from API.');
         }
 
-        return json_decode($response->getBody());
+        return json_decode($response->getBody()->getContents());
     }
 
     public function getListGroupCategories($listId, $offset = 0, $limit = 10)
@@ -261,7 +261,7 @@ class Client
             throw new ApiException('Could not fetch interest-categories from API.');
         }
 
-        return json_decode($response->getBody());
+        return json_decode($response->getBody()->getContents());
     }
 
     public function getListGroup($listId, $groupId, $offset = 0, $limit = 10)
@@ -278,7 +278,7 @@ class Client
             throw new ApiException('Could not fetch interest group from API.');
         }
 
-        return json_decode($response->getBody());
+        return json_decode($response->getBody()->getContents());
     }
 
     public function getSubscriberHash($email)
