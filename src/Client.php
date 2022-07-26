@@ -5,14 +5,16 @@ declare(strict_types=1);
 namespace Oneup\MailChimp;
 
 use GuzzleHttp\Client as GuzzleClient;
+use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
 use Oneup\MailChimp\Exception\ApiException;
 use Psr\Http\Message\ResponseInterface;
 
 class Client
 {
-    public const STATUS_SUBSCRIBED = 'subscribed';
+    public const STATUS_ARCHIVED = 'archived';
     public const STATUS_PENDING = 'pending';
+    public const STATUS_SUBSCRIBED = 'subscribed';
 
     protected GuzzleClient $client;
     protected string $apiKey;
@@ -80,10 +82,10 @@ class Client
                 case 'get':
                 default:
                     $response = $this->client->request('GET', $uri, [
-                            'query' => $args,
-                            'timeout' => $timeout,
-                            'headers' => $this->headers,
-                        ]);
+                        'query' => $args,
+                        'timeout' => $timeout,
+                        'headers' => $this->headers,
+                    ]);
                     break;
             }
 
@@ -97,10 +99,18 @@ class Client
                 throw $e;
             }
 
-            $this->lastError = json_decode($response->getBody()->getContents(), false, 512, \JSON_THROW_ON_ERROR);
+            try {
+                $this->lastError = json_decode((string) $response->getBody(), false, 512, \JSON_THROW_ON_ERROR);
+            } catch (\JsonException $e) {
+                $this->lastError = $e;
+            }
 
             return $response;
+        } catch (\JsonException|GuzzleException $e) {
+            $this->lastError = $e;
         }
+
+        return null;
     }
 
     public function get($uri = '', $args = [], $timeout = 10): ?ResponseInterface
@@ -135,11 +145,14 @@ class Client
         return $response && 200 === $response->getStatusCode();
     }
 
+    /**
+     * @throws \JsonException
+     */
     public function getAccountDetails()
     {
         $response = $this->get('');
 
-        return $response ? json_decode($response->getBody()->getContents(), false, 512, \JSON_THROW_ON_ERROR) : null;
+        return $response ? json_decode((string) $response->getBody(), false, 512, \JSON_THROW_ON_ERROR) : null;
     }
 
     public function isSubscribed($listId, $email): bool
@@ -147,6 +160,10 @@ class Client
         return self::STATUS_SUBSCRIBED === $this->getSubscriberStatus($listId, $email);
     }
 
+    /**
+     * @throws ApiException
+     * @throws \JsonException
+     */
     public function getSubscriberStatus($listId, $email)
     {
         $endpoint = sprintf('lists/%s/members/%s', $listId, $this->getSubscriberHash($email));
@@ -157,15 +174,20 @@ class Client
             throw new ApiException('Could not connect to API. Check your credentials.');
         }
 
-        $body = json_decode($response->getBody()->getContents(), false, 512, \JSON_THROW_ON_ERROR);
+        $body = json_decode((string) $response->getBody(), false, 512, \JSON_THROW_ON_ERROR);
 
         return $body->status;
     }
 
+    /**
+     * @throws ApiException
+     * @throws \JsonException
+     */
     public function subscribeToList($listId, $email, $mergeVars = [], $doubleOptin = true, $interests = []): bool
     {
-        $status = $this->getSubscriberStatus($listId, $email);
         $endpoint = sprintf('lists/%s/members', $listId);
+
+        $status = $this->getSubscriberStatus($listId, $email);
 
         if (self::STATUS_SUBSCRIBED !== $status) {
             $requestData = [
@@ -182,25 +204,32 @@ class Client
                 $requestData['interests'] = $interests;
             }
 
-            $response = $this->put($endpoint . '/' . $this->getSubscriberHash($email), $requestData);
+            if (self::STATUS_ARCHIVED === $status) {
+                $response = $this->patch($endpoint . '/' . $this->getSubscriberHash($email), $requestData);
+            } else {
+                $response = $this->put($endpoint . '/' . $this->getSubscriberHash($email), $requestData);
+            }
 
             if (null === $response) {
                 throw new ApiException('Could not connect to API. Check your credentials.');
             }
 
-            $body = json_decode($response->getBody()->getContents(), false, 512, \JSON_THROW_ON_ERROR);
+            $body = json_decode((string) $response->getBody(), false, 512, \JSON_THROW_ON_ERROR);
 
-            // This is quite hacky due to fucked up mailchimp API
+            // This is quite hacky due to weird mailchimp API
             if (400 === $response->getStatusCode() && 'Member Exists' === $body->title) {
                 return true;
             }
 
-            return $response && 200 === $response->getStatusCode();
+            return 200 === $response->getStatusCode();
         }
 
         return false;
     }
 
+    /**
+     * @throws ApiException
+     */
     public function unsubscribeFromList($listId, $email): bool
     {
         $endpoint = sprintf('lists/%s/members/%s', $listId, $this->getSubscriberHash($email));
@@ -216,6 +245,9 @@ class Client
         return 200 === $response->getStatusCode();
     }
 
+    /**
+     * @throws ApiException
+     */
     public function removeFromList($listId, $email): bool
     {
         $endpoint = sprintf('lists/%s/members/%s', $listId, $this->getSubscriberHash($email));
@@ -229,6 +261,10 @@ class Client
         return 204 === $response->getStatusCode();
     }
 
+    /**
+     * @throws ApiException
+     * @throws \JsonException
+     */
     public function getListFields($listId, $offset = 0, $limit = 10)
     {
         $endpoint = sprintf('lists/%s/merge-fields', $listId);
@@ -243,9 +279,13 @@ class Client
             throw new ApiException('Could not fetch merge-fields from API.');
         }
 
-        return json_decode($response->getBody()->getContents(), false, 512, \JSON_THROW_ON_ERROR);
+        return json_decode((string) $response->getBody(), false, 512, \JSON_THROW_ON_ERROR);
     }
 
+    /**
+     * @throws ApiException
+     * @throws \JsonException
+     */
     public function getListGroupCategories($listId, $offset = 0, $limit = 10)
     {
         $endpoint = sprintf('lists/%s/interest-categories', $listId);
@@ -260,9 +300,13 @@ class Client
             throw new ApiException('Could not fetch interest-categories from API.');
         }
 
-        return json_decode($response->getBody()->getContents(), false, 512, \JSON_THROW_ON_ERROR);
+        return json_decode((string) $response->getBody(), false, 512, \JSON_THROW_ON_ERROR);
     }
 
+    /**
+     * @throws ApiException
+     * @throws \JsonException
+     */
     public function getListGroup($listId, $groupId, $offset = 0, $limit = 10)
     {
         $endpoint = sprintf('lists/%s/interest-categories/%s/interests', $listId, $groupId);
@@ -277,7 +321,7 @@ class Client
             throw new ApiException('Could not fetch interest group from API.');
         }
 
-        return json_decode($response->getBody()->getContents(), false, 512, \JSON_THROW_ON_ERROR);
+        return json_decode((string) $response->getBody(), false, 512, \JSON_THROW_ON_ERROR);
     }
 
     public function getSubscriberHash($email): string
