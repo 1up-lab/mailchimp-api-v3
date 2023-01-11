@@ -384,17 +384,10 @@ class Client
         return $this->addOrRemoveMemberTags($listId, $email, $inactiveTags, $isSyncing);
     }
 
-    public function getSubscriberHash($email): string
-    {
-        return md5(strtolower($email));
-    }
-
-    public function getLastError(): ?object
-    {
-        return $this->lastError;
-    }
-
-    private function addOrRemoveMemberTags(string $listId, string $email, array $tags = [], bool $isSyncing = false): bool
+    /**
+     * @throws ApiException
+     */
+    public function addOrRemoveMemberTags(string $listId, string $email, array $tags = [], bool $isSyncing = false): bool
     {
         $endpoint = sprintf('lists/%s/members/%s/tags', $listId, $this->getSubscriberHash($email));
 
@@ -408,5 +401,15 @@ class Client
         }
 
         return 204 === $response->getStatusCode();
+    }
+
+    public function getSubscriberHash($email): string
+    {
+        return md5(strtolower($email));
+    }
+
+    public function getLastError(): ?object
+    {
+        return $this->lastError;
     }
 }
