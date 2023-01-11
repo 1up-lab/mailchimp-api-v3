@@ -148,7 +148,7 @@ class Client
     /**
      * @throws \JsonException
      */
-    public function getAccountDetails()
+    public function getAccountDetails(): ?array
     {
         $response = $this->get('');
 
@@ -164,7 +164,7 @@ class Client
      * @throws ApiException
      * @throws \JsonException
      */
-    public function getSubscriberStatus($listId, $email)
+    public function getSubscriberStatus(string $listId, string $email): string
     {
         $endpoint = sprintf('lists/%s/members/%s', $listId, $this->getSubscriberHash($email));
 
@@ -183,7 +183,7 @@ class Client
      * @throws ApiException
      * @throws \JsonException
      */
-    public function subscribeToList($listId, $email, $mergeVars = [], $doubleOptin = true, $interests = []): bool
+    public function subscribeToList(string $listId, string $email, array $mergeVars = [], bool $doubleOptIn = true, array $interests = []): bool
     {
         $endpoint = sprintf('lists/%s/members', $listId);
 
@@ -193,7 +193,7 @@ class Client
             $requestData = [
                 'id' => $listId,
                 'email_address' => $email,
-                'status' => $doubleOptin ? self::STATUS_PENDING : self::STATUS_SUBSCRIBED,
+                'status' => $doubleOptIn ? self::STATUS_PENDING : self::STATUS_SUBSCRIBED,
             ];
 
             if (\count($mergeVars) > 0) {
@@ -230,7 +230,7 @@ class Client
     /**
      * @throws ApiException
      */
-    public function unsubscribeFromList($listId, $email): bool
+    public function unsubscribeFromList(string $listId, string $email): bool
     {
         $endpoint = sprintf('lists/%s/members/%s', $listId, $this->getSubscriberHash($email));
 
@@ -248,7 +248,7 @@ class Client
     /**
      * @throws ApiException
      */
-    public function removeFromList($listId, $email): bool
+    public function removeFromList(string $listId, string $email): bool
     {
         $endpoint = sprintf('lists/%s/members/%s', $listId, $this->getSubscriberHash($email));
 
@@ -265,7 +265,7 @@ class Client
      * @throws ApiException
      * @throws \JsonException
      */
-    public function getListFields($listId, $offset = 0, $limit = 10)
+    public function getListFields(string $listId, int $offset = 0, int $limit = 10): array
     {
         $endpoint = sprintf('lists/%s/merge-fields', $listId);
 
@@ -286,7 +286,7 @@ class Client
      * @throws ApiException
      * @throws \JsonException
      */
-    public function getListGroupCategories($listId, $offset = 0, $limit = 10)
+    public function getListGroupCategories(string $listId, int $offset = 0, int $limit = 10)
     {
         $endpoint = sprintf('lists/%s/interest-categories', $listId);
 
@@ -307,7 +307,7 @@ class Client
      * @throws ApiException
      * @throws \JsonException
      */
-    public function getListGroup($listId, $groupId, $offset = 0, $limit = 10)
+    public function getListGroup(string $listId, string $groupId, int $offset = 0, int $limit = 10): array
     {
         $endpoint = sprintf('lists/%s/interest-categories/%s/interests', $listId, $groupId);
 
@@ -324,6 +324,66 @@ class Client
         return json_decode((string) $response->getBody(), false, 512, \JSON_THROW_ON_ERROR);
     }
 
+    /**
+     * @throws ApiException
+     * @throws \JsonException
+     */
+    public function getMemberTags(string $listId, string $email, array $fields = [], array $excludeFields = [], int $count = 10, int $offset = 0): array
+    {
+        $endpoint = sprintf('lists/%s/members/%s/tags', $listId, $this->getSubscriberHash($email));
+
+        $response = $this->get($endpoint, [
+            'fields' => implode(',', $fields),
+            'exclude_fields' => implode(',', $excludeFields),
+            'count' => $count,
+            'offset' => $offset,
+        ]);
+
+        if (null === $response) {
+            throw new ApiException('Could not connect to API. Check your credentials.');
+        }
+
+        if (200 !== $response->getStatusCode()) {
+            throw new ApiException('Could not fetch member tags from API.');
+        }
+
+        return json_decode((string) $response->getBody(), false, 512, \JSON_THROW_ON_ERROR);
+    }
+
+    /**
+     * @throws ApiException
+     */
+    public function addMemberTags(string $listId, string $email, array $tags = [], bool $isSyncing = false): bool
+    {
+        $activeTags = [];
+
+        foreach ($tags as $tag) {
+            $activeTags[] = [
+                'name' => $tag,
+                'status' => 'active',
+            ];
+        }
+
+        return $this->addOrRemoveMemberTags($listId, $email, $activeTags, $isSyncing);
+    }
+
+    /**
+     * @throws ApiException
+     */
+    public function removeMemberTags(string $listId, string $email, array $tags = [], bool $isSyncing = false): bool
+    {
+        $inactiveTags = [];
+
+        foreach ($tags as $tag) {
+            $inactiveTags[] = [
+                'name' => $tag,
+                'status' => 'inactive',
+            ];
+        }
+
+        return $this->addOrRemoveMemberTags($listId, $email, $inactiveTags, $isSyncing);
+    }
+
     public function getSubscriberHash($email): string
     {
         return md5(strtolower($email));
@@ -332,5 +392,21 @@ class Client
     public function getLastError(): ?object
     {
         return $this->lastError;
+    }
+
+    private function addOrRemoveMemberTags(string $listId, string $email, array $tags = [], bool $isSyncing = false): bool
+    {
+        $endpoint = sprintf('lists/%s/members/%s/tags', $listId, $this->getSubscriberHash($email));
+
+        $response = $this->post($endpoint, [
+            'tags' => $tags,
+            'is_syncing' => $isSyncing,
+        ]);
+
+        if (null === $response) {
+            throw new ApiException('Could not connect to API. Check your credentials.');
+        }
+
+        return 204 === $response->getStatusCode();
     }
 }
