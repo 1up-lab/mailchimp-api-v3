@@ -164,7 +164,7 @@ class Client
      * @throws ApiException
      * @throws \JsonException
      */
-    public function getSubscriberStatus(string $listId, string $email): int
+    public function getSubscriberStatus(string $listId, string $email): string
     {
         $endpoint = sprintf('lists/%s/members/%s', $listId, $this->getSubscriberHash($email));
 
@@ -176,7 +176,7 @@ class Client
 
         $body = json_decode((string) $response->getBody(), false, 512, \JSON_THROW_ON_ERROR);
 
-        return $body->status;
+        return (string) $body->status;
     }
 
     /**
