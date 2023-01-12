@@ -148,7 +148,7 @@ class Client
     /**
      * @throws \JsonException
      */
-    public function getAccountDetails(): ?array
+    public function getAccountDetails(): ?object
     {
         $response = $this->get('');
 
@@ -164,7 +164,7 @@ class Client
      * @throws ApiException
      * @throws \JsonException
      */
-    public function getSubscriberStatus(string $listId, string $email): string
+    public function getSubscriberStatus(string $listId, string $email): int
     {
         $endpoint = sprintf('lists/%s/members/%s', $listId, $this->getSubscriberHash($email));
 
