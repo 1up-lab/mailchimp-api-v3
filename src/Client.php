@@ -265,7 +265,7 @@ class Client
      * @throws ApiException
      * @throws \JsonException
      */
-    public function getListFields(string $listId, int $offset = 0, int $limit = 10): array
+    public function getListFields(string $listId, int $offset = 0, int $limit = 10): object
     {
         $endpoint = sprintf('lists/%s/merge-fields', $listId);
 
@@ -286,7 +286,7 @@ class Client
      * @throws ApiException
      * @throws \JsonException
      */
-    public function getListGroupCategories(string $listId, int $offset = 0, int $limit = 10)
+    public function getListGroupCategories(string $listId, int $offset = 0, int $limit = 10): object
     {
         $endpoint = sprintf('lists/%s/interest-categories', $listId);
 
@@ -307,7 +307,7 @@ class Client
      * @throws ApiException
      * @throws \JsonException
      */
-    public function getListGroup(string $listId, string $groupId, int $offset = 0, int $limit = 10): array
+    public function getListGroup(string $listId, string $groupId, int $offset = 0, int $limit = 10): object
     {
         $endpoint = sprintf('lists/%s/interest-categories/%s/interests', $listId, $groupId);
 
@@ -328,7 +328,7 @@ class Client
      * @throws ApiException
      * @throws \JsonException
      */
-    public function getMemberTags(string $listId, string $email, array $fields = [], array $excludeFields = [], int $count = 10, int $offset = 0): array
+    public function getMemberTags(string $listId, string $email, array $fields = [], array $excludeFields = [], int $count = 10, int $offset = 0): object
     {
         $endpoint = sprintf('lists/%s/members/%s/tags', $listId, $this->getSubscriberHash($email));
 
