@@ -43,8 +43,6 @@ class Client
 
     public function call($type = 'get', $uri = '', $args = [], $timeout = 10): ?ResponseInterface
     {
-        $args['apikey'] = $this->apiKey;
-
         try {
             switch ($type) {
                 case 'post':
